@@ -6,6 +6,9 @@ import spray.http._
 import StatusCodes._
 
 class MyServiceSpec extends Specification with Specs2RouteTest with MyService {
+  import spray.http.MediaTypes._
+  import com.example.BillJsonSupport
+
   def actorRefFactory = system
   
   "MyService" should {
@@ -16,16 +19,29 @@ class MyServiceSpec extends Specification with Specs2RouteTest with MyService {
       }
     }
 
+
+    "return a greeting for POST requests to the root path" in {
+      Post() ~> myRoute ~> check {
+        responseAs[String] must contain("Say hello")
+      }
+    }
+
     "leave GET requests to other paths unhandled" in {
       Get("/kermit") ~> myRoute ~> check {
         handled must beFalse
       }
     }
 
+    "POST request to BILL" in {
+      Post("/bills", HttpEntity(`application/json`, """{ "id": "123", "amount" : 5.55 }""" )) ~> myRoute ~> check {
+        responseAs[String] must equalTo {"""{ "id": "123", "amount" : 5.55 }"""}
+      }
+    }
+
     "return a MethodNotAllowed error for PUT requests to the root path" in {
       Put() ~> sealRoute(myRoute) ~> check {
         status === MethodNotAllowed
-        responseAs[String] === "HTTP method not allowed, supported methods: GET"
+        responseAs[String] must contain {"HTTP method not allowed, supported methods: GET"}
       }
     }
   }
