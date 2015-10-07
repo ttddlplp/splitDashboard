@@ -1,13 +1,12 @@
 package com.example
 
 import org.specs2.mutable.Specification
-import spray.testkit.Specs2RouteTest
+import spray.http.StatusCodes._
 import spray.http._
-import StatusCodes._
+import spray.testkit.Specs2RouteTest
 
 class MyServiceSpec extends Specification with Specs2RouteTest with MyService {
-  import spray.http.MediaTypes._
-  import com.example.BillJsonSupport
+  import com.example.BillJsonSupport._
 
   def actorRefFactory = system
   
@@ -33,8 +32,9 @@ class MyServiceSpec extends Specification with Specs2RouteTest with MyService {
     }
 
     "POST request to BILL" in {
-      Post("/bills", HttpEntity(`application/json`, """{ "id": "123", "amount" : 5.55 }""" )) ~> myRoute ~> check {
-        responseAs[String] must equalTo {"""{ "id": "123", "amount" : 5.55 }"""}
+      Post("/bills", Bill("123", 5.55)) ~> myRoute ~> check {
+        responseAs[Bill] must equalTo(Bill("123", 5.55))
+        entity.toOption.get.contentType.toString() must contain("application/json")
       }
     }
 
