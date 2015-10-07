@@ -1,6 +1,8 @@
 package com.example
 
 import akka.actor.Actor
+import spray.httpx.SprayJsonSupport
+import spray.json.DefaultJsonProtocol
 import spray.routing._
 import spray.http._
 import MediaTypes._
@@ -19,9 +21,15 @@ class MyServiceActor extends Actor with MyService {
   def receive = runRoute(myRoute)
 }
 
+case class Bill(id: String, amount: Double)
+
+object BillJsonSupport extends DefaultJsonProtocol with SprayJsonSupport {
+  implicit val BillFormatter = jsonFormat2(Bill)
+}
 
 // this trait defines our service behavior independently from the service actor
 trait MyService extends HttpService {
+  import com.example.BillJsonSupport._
 
   val myRoute =
     path("") {
@@ -35,6 +43,39 @@ trait MyService extends HttpService {
             </html>
           }
         }
-      }
-    }
+      } ~
+        post {
+          respondWithMediaType(`text/html`) {
+            complete {
+              <html>
+                <body>
+                  <h1>Say hello to <i>spray-routing</i> on <i>spray-can</i>!</h1>
+                </body>
+              </html>
+            }
+          }
+        }
+    } ~
+      path("aaa" / IntNumber) { id =>
+        get {
+            respondWithMediaType(`text/html`) {
+              complete {
+                <html>
+                  <body>
+                    <h1>$id</h1>
+                  </body>
+                </html>
+              }
+            }
+          }
+        } ~
+          path("bills") {
+            post {
+              entity(as[Bill]) { bill =>
+                complete {
+                  bill
+                }
+              }
+            }
+          }
 }
